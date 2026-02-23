@@ -37,6 +37,9 @@ jobs:
           cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
           cache-read-only: false
       
+      - name: Update submodules
+        run: git submodule update --init --recursive
+      
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       
@@ -96,13 +99,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Force debug signingConfig
-        if: steps.check_secret.outputs.exists == 'true'
-        run: |
-          sed -i 's/debug {/debug {\n                signingConfig = signingConfigs.getByName("prerelease")\n /' app/build.gradle.kts
+      # - name: Force debug signingConfig
+      #   if: steps.check_secret.outputs.exists == 'true'
+      #   run: |
+      #     sed -i 's/debug {/debug {\n                signingConfig = signingConfigs.getByName("prerelease")\n /' app/build.gradle.kts
       
       - name: Build Debug APK
-        run: ./gradlew assemblePrereleaseDebug
+        run: ./gradlew assembleDebug
       
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
