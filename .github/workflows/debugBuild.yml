@@ -92,7 +92,7 @@ jobs:
           wget -q https://github.com/okibcn/miniU/raw/main/Github_Linux/profile.sh -O ~/.zshrc
           cp /etc/bash.bashrc ~
           cat ~/.zshrc >> ~/bash.bashrc
-          chsh -s $(which zsh) $USER
+          sudo chsh -s $(which zsh) $USER
 
       - name: "🐞 Debug session"
         uses: mxschmitt/action-tmate@v3
