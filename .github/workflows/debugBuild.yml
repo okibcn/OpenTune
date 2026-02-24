@@ -5,9 +5,9 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  # push:
-  #   paths-ignore:
-  #     - '*.md'
+  push:
+    paths-ignore:
+      - '*.md'
   workflow_dispatch:
 
 jobs:
