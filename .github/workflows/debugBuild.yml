@@ -5,9 +5,9 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  push:
-    paths-ignore:
-      - '*.md'
+  # push:
+  #   paths-ignore:
+  #     - '*.md'
   workflow_dispatch:
     inputs:
       debug_enabled:
@@ -82,31 +82,10 @@ jobs:
           echo "SIGNING_KEY_PASSWORD=android" >> $GITHUB_ENV
           echo "SIGNING_KEY_ALIAS=androiddebugkey" >> $GITHUB_ENV
 
-      - name: "🔧 Prepare debug session"
-        if: github.event.inputs.debug_enabled == 'true'
+      - name: Force debug signingConfig
+        if: steps.check_secret.outputs.exists == 'true'
         run: |
-          sudo apt install zsh zsh-syntax-highlighting
-          sudo wget https://github.com/JanDeDobbeleer/oh-my-posh/releases/latest/download/posh-linux-amd64 -O /usr/local/bin/oh-my-posh
-          sudo chmod +x /usr/local/bin/oh-my-posh
-          wget -q https://github.com/okibcn/miniU/raw/main/Github_Linux/.nanorc -O ~/.nanorc
-          wget -q https://github.com/okibcn/miniU/raw/main/Github_Linux/profile.sh -O ~/.zshrc
-          cp /etc/bash.bashrc ~
-          cat ~/.zshrc >> ~/bash.bashrc
-          sudo chsh -s $(which zsh)
-          echo "set-option -g default-shell $(which zsh)" >> ~/.tmate.conf
-          cat ~/bash.bashrc >> ~/.tmate.conf
-          export SHELL=$(which zsh)
-
-      - name: "🐞 Debug session"
-        uses: mxschmitt/action-tmate@v3
-        if: github.event.inputs.debug_enabled == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # - name: Force debug signingConfig
-      #   if: steps.check_secret.outputs.exists == 'true'
-      #   run: |
-      #     sed -i 's/debug {/debug {\n                signingConfig = signingConfigs.getByName("prerelease")\n /' app/build.gradle.kts
+          sed -i 's/debug {/debug {\n                signingConfig = signingConfigs.getByName("prerelease")\n /' app/build.gradle.kts
       
       - name: Build Debug APK
         run: ./gradlew assembleDebug
