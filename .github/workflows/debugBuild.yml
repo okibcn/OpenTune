@@ -82,10 +82,10 @@ jobs:
           echo "SIGNING_KEY_PASSWORD=android" >> $GITHUB_ENV
           echo "SIGNING_KEY_ALIAS=androiddebugkey" >> $GITHUB_ENV
 
-      - name: Force debug signingConfig
-        if: steps.check_secret.outputs.exists == 'true'
-        run: |
-          sed -i 's/debug {/debug {\n                signingConfig = signingConfigs.getByName("prerelease")\n /' app/build.gradle.kts
+      # - name: Force debug signingConfig
+      #   if: steps.check_secret.outputs.exists == 'true'
+      #   run: |
+      #     sed -i 's/debug {/debug {\n                signingConfig = signingConfigs.getByName("prerelease")\n /' app/build.gradle.kts
       
       - name: Build Debug APK
         run: ./gradlew assembleDebug
