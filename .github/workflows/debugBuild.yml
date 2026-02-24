@@ -50,11 +50,11 @@ jobs:
         run: |
           mkdir -p ~/work/_temp/keystore/
           if [ -n "$KEYSTORE_SECRET" ]; then
-            echo "$KEYSTORE_SECRET" | base64 -d > ~/work/_temp/keystore/prerelease.keystore
+            printf '%s' "$KEYSTORE_SECRET" | base64 -d > "$RUNNER_TEMP/keystore/prerelease.keystore"
             echo "✅ Keystore cargado desde DEBUG_KEYSTORE_BASE64"
           else
             keytool -genkey -v \
-              -keystore ~/work/_temp/keystore/prerelease.keystore \
+              -keystore "$RUNNER_TEMP/keystore/prerelease.keystore" \
               -storepass android \
               -keypass android \
               -alias androiddebugkey \
@@ -64,14 +64,14 @@ jobs:
             echo "════════════════════════════════════════════════════════"
             echo "⚠️  DEBUG_KEYSTORE_BASE64 no está configurado."
             echo "    Este APK usa una firma aleatoria — no podrás instalar"
-            echo "    nuevas builds sobre esta sin desinstalar primero."
+            echo "    esta build sobre una anterior sin desinstalarla antes."
             echo ""
             echo "    Para fijar esta firma de forma permanente, copia el"
             echo "    bloque de abajo y añádelo en:"
-            echo "    Settings → Secrets and variables → Actions"
+            echo "    Settings → Secrets and variables → Actions → [New Repository Secret]"
             echo "    Nombre del secret: DEBUG_KEYSTORE_BASE64"
             echo "════════════════════════════════════════════════════════"
-            base64 ~/work/_temp/keystore/prerelease.keystore
+            base64 "$RUNNER_TEMP/keystore/prerelease.keystore"
             echo "════════════════════════════════════════════════════════"
           fi
           echo "MUSIC_DEBUG_KEYSTORE_FILE=$HOME/work/_temp/keystore/prerelease.keystore" >> $GITHUB_ENV
