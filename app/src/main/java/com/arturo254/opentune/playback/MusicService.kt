@@ -1594,6 +1594,7 @@ class MusicService :
         const val ARTIST = "artist"
         const val ALBUM = "album"
         const val PLAYLIST = "playlist"
+        const val YT_PLAYLIST = "yt_playlist"
 
         const val CHANNEL_ID = "music_channel_01"
         const val NOTIFICATION_ID = 888

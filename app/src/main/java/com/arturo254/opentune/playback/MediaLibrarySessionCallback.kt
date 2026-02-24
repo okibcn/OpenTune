@@ -38,6 +38,11 @@ import kotlinx.coroutines.guava.future
 import kotlinx.coroutines.plus
 import javax.inject.Inject
 
+import com.arturo254.innertube.YouTube
+import com.arturo254.innertube.models.PlaylistItem
+import com.arturo254.innertube.pages.LibraryPage
+
+
 class MediaLibrarySessionCallback
 @Inject
 constructor(
@@ -182,44 +187,48 @@ constructor(
                     MusicService.PLAYLIST -> {
                         val likedSongCount = database.likedSongsCount().first()
                         val downloadedSongCount = downloadUtil.downloads.value.size
-                        listOf(
+
+                        val staticPlaylists = listOf(
                             browsableMediaItem(
                                 "${MusicService.PLAYLIST}/${PlaylistEntity.LIKED_PLAYLIST_ID}",
                                 context.getString(R.string.liked_songs),
-                                context.resources.getQuantityString(
-                                    R.plurals.n_song,
-                                    likedSongCount,
-                                    likedSongCount
-                                ),
+                                context.resources.getQuantityString(R.plurals.n_song, likedSongCount, likedSongCount),
                                 drawableUri(R.drawable.favorite),
                                 MediaMetadata.MEDIA_TYPE_PLAYLIST,
                             ),
                             browsableMediaItem(
                                 "${MusicService.PLAYLIST}/${PlaylistEntity.DOWNLOADED_PLAYLIST_ID}",
                                 context.getString(R.string.downloaded_songs),
-                                context.resources.getQuantityString(
-                                    R.plurals.n_song,
-                                    downloadedSongCount,
-                                    downloadedSongCount
-                                ),
+                                context.resources.getQuantityString(R.plurals.n_song, downloadedSongCount, downloadedSongCount),
                                 drawableUri(R.drawable.download),
                                 MediaMetadata.MEDIA_TYPE_PLAYLIST,
                             ),
-                        ) +
-                                database.playlistsByCreateDateAsc().first().map { playlist ->
-                                    browsableMediaItem(
-                                        "${MusicService.PLAYLIST}/${playlist.id}",
-                                        playlist.playlist.name,
-                                        context.resources.getQuantityString(
-                                            R.plurals.n_song,
-                                            playlist.songCount,
-                                            playlist.songCount
-                                        ),
-                                        playlist.thumbnails.firstOrNull()?.toUri(),
+                        )
+
+                        // ── YouTube Music playlists online ──────────────────────────────
+                        val ytPlaylists = mutableListOf<MediaItem>()
+                        var libraryPage = YouTube.library("FEmusic_liked_playlists").getOrNull()
+                        while (libraryPage != null) {
+                            libraryPage.items
+                                .filterIsInstance<PlaylistItem>()
+                                .forEach { playlist ->
+                                    ytPlaylists += browsableMediaItem(
+                                        "${MusicService.YT_PLAYLIST}/${playlist.id}",
+                                        playlist.title,
+                                        playlist.songCountText,
+                                        playlist.thumbnail?.toUri(),
                                         MediaMetadata.MEDIA_TYPE_PLAYLIST,
                                     )
                                 }
+                            libraryPage = libraryPage.continuation
+                                ?.let { cont -> YouTube.libraryContinuation(cont).getOrNull() }
+                                ?.let { cp -> LibraryPage(cp.items, cp.continuation) }
+                        }
+                        // ────────────────────────────────────────────────────────────────
+
+                        staticPlaylists + ytPlaylists
                     }
+
 
                     else ->
                         when {
@@ -267,6 +276,38 @@ constructor(
                                 }.first().map {
                                     it.toMediaItem(parentId)
                                 }
+
+                            parentId.startsWith("${MusicService.YT_PLAYLIST}/") -> {
+                                val playlistId = parentId.removePrefix("${MusicService.YT_PLAYLIST}/")
+
+                                val playlistPage = YouTube.playlist(playlistId).getOrNull()
+                                    ?: return@future LibraryResult.ofError(SessionError.ERROR_UNKNOWN)
+
+                                // Cargar todas las canciones con paginación
+                                val songs = playlistPage.songs.toMutableList()
+                                var songsCont = playlistPage.songsContinuation
+                                while (songsCont != null) {
+                                    val cont = YouTube.playlistContinuation(songsCont).getOrNull() ?: break
+                                    songs += cont.songs
+                                    songsCont = cont.continuation
+                                }
+
+                                songs.map { song ->
+                                    MediaItem.Builder()
+                                        .setMediaId("${MusicService.YT_PLAYLIST}/$playlistId/${song.id}")
+                                        .setMediaMetadata(
+                                            MediaMetadata.Builder()
+                                                .setTitle(song.title)
+                                                .setSubtitle(song.artists.joinToString { it.name })
+                                                .setArtist(song.artists.joinToString { it.name })
+                                                .setArtworkUri(song.thumbnail?.toUri())
+                                                .setIsPlayable(true)
+                                                .setIsBrowsable(false)
+                                                .setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
+                                                .build()
+                                        ).build()
+                                }
+                            }
 
                             else -> emptyList()
                         }
@@ -370,6 +411,44 @@ constructor(
                     MediaSession.MediaItemsWithStartPosition(
                         songs.map { it.toMediaItem() },
                         songs.indexOfFirst { it.id == songId }.takeIf { it != -1 } ?: 0,
+                        startPositionMs,
+                    )
+                }
+
+                MusicService.YT_PLAYLIST -> {
+                    val songId = path.getOrNull(2) ?: return@future defaultResult
+                    val playlistId = path.getOrNull(1) ?: return@future defaultResult
+
+                    val playlistPage = YouTube.playlist(playlistId).getOrNull()
+                        ?: return@future defaultResult
+
+                    val songs = playlistPage.songs.toMutableList()
+                    var songsCont = playlistPage.songsContinuation
+                    while (songsCont != null) {
+                        val cont = YouTube.playlistContinuation(songsCont).getOrNull() ?: break
+                        songs += cont.songs
+                        songsCont = cont.continuation
+                    }
+
+                    val mediaItems = songs.map { song ->
+                        MediaItem.Builder()
+                            .setMediaId(song.id) // ID de video de YouTube — MusicService lo resuelve directamente
+                            .setMediaMetadata(
+                                MediaMetadata.Builder()
+                                    .setTitle(song.title)
+                                    .setSubtitle(song.artists.joinToString { it.name })
+                                    .setArtist(song.artists.joinToString { it.name })
+                                    .setArtworkUri(song.thumbnail?.toUri())
+                                    .setIsPlayable(true)
+                                    .setIsBrowsable(false)
+                                    .setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
+                                    .build()
+                            ).build()
+                    }
+
+                    MediaSession.MediaItemsWithStartPosition(
+                        mediaItems,
+                        mediaItems.indexOfFirst { it.mediaId == songId }.takeIf { it != -1 } ?: 0,
                         startPositionMs,
                     )
                 }
