@@ -92,7 +92,9 @@ jobs:
           wget -q https://github.com/okibcn/miniU/raw/main/Github_Linux/profile.sh -O ~/.zshrc
           cp /etc/bash.bashrc ~
           cat ~/.zshrc >> ~/bash.bashrc
-          sudo chsh -s $(which zsh) runner
+          sudo chsh -s $(which zsh)
+          echo "set-option -g default-shell $(which zsh)" >> ~/.tmate.conf
+          export SHELL=$(which zsh)
 
       - name: "🐞 Debug session"
         uses: mxschmitt/action-tmate@v3
