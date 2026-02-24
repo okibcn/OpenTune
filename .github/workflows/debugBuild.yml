@@ -9,12 +9,6 @@ on:
   #   paths-ignore:
   #     - '*.md'
   workflow_dispatch:
-    inputs:
-      debug_enabled:
-        description: 'Debug session enabled'
-        required: false
-        default: false
-        type: boolean
     paths-ignore:
       - '*.md'
 
