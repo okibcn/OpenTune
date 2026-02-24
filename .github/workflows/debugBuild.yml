@@ -92,7 +92,7 @@ jobs:
           wget -q https://github.com/okibcn/miniU/raw/main/Github_Linux/profile.sh -O ~/.zshrc
           cp /etc/bash.bashrc ~
           cat ~/.zshrc >> ~/bash.bashrc
-          sudo chsh -s $(which zsh) $USER
+          sudo chsh -s $(which zsh) runner
 
       - name: "🐞 Debug session"
         uses: mxschmitt/action-tmate@v3
@@ -112,6 +112,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: debug-apk-${{ github.ref_name }}-run${{ github.run_number }}
-          path: "app/build/outputs/apk/prerelease/debug/*.apk"
+          path: "app/build/outputs/apk/debug/*.apk"
           retention-days: 7
 
