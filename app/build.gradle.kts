@@ -44,7 +44,7 @@ android {
             if (System.getenv("MUSIC_DEBUG_SIGNING_STORE_PASSWORD") != null) {
                 storeFile = file(System.getenv("MUSIC_DEBUG_KEYSTORE_FILE"))
                 storePassword = System.getenv("MUSIC_DEBUG_SIGNING_STORE_PASSWORD")
-                keyAlias = "debug"
+                keyAlias = System.getenv("MUSIC_DEBUG_SIGNING_KEY_ALIAS") ?: "androiddebugkey"
                 keyPassword = System.getenv("MUSIC_DEBUG_SIGNING_KEY_PASSWORD")
             }
         }

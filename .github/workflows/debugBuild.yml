@@ -78,14 +78,10 @@ jobs:
       - name: Setup signing env vars
         if: steps.check_secret.outputs.exists == 'true'
         run: |
-          echo "SIGNING_STORE_PASSWORD=android" >> $GITHUB_ENV
-          echo "SIGNING_KEY_PASSWORD=android" >> $GITHUB_ENV
-          echo "SIGNING_KEY_ALIAS=androiddebugkey" >> $GITHUB_ENV
-
-      # - name: Force debug signingConfig
-      #   if: steps.check_secret.outputs.exists == 'true'
-      #   run: |
-      #     sed -i 's/debug {/debug {\n                signingConfig = signingConfigs.getByName("prerelease")\n /' app/build.gradle.kts
+          echo "MUSIC_DEBUG_KEYSTORE_FILE=$HOME/work/_temp/keystore/prerelease.keystore" >> $GITHUB_ENV
+          echo "MUSIC_DEBUG_SIGNING_STORE_PASSWORD=android" >> $GITHUB_ENV
+          echo "MUSIC_DEBUG_SIGNING_KEY_PASSWORD=android" >> $GITHUB_ENV
+          echo "MUSIC_DEBUG_SIGNING_KEY_ALIAS=androiddebugkey" >> $GITHUB_ENV
       
       - name: Build Debug APK
         run: ./gradlew assembleDebug
@@ -96,4 +92,3 @@ jobs:
           name: debug-apk-${{ github.ref_name }}-run${{ github.run_number }}
           path: "app/build/outputs/apk/debug/*.apk"
           retention-days: 7
-
