@@ -48,7 +48,7 @@ jobs:
         env:
           KEYSTORE_SECRET: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
         run: |
-          mkdir -p ~/work/_temp/keystore/
+          mkdir -p "$RUNNER_TEMP/keystore/"
           if [ -n "$KEYSTORE_SECRET" ]; then
             printf '%s' "$KEYSTORE_SECRET" | base64 -d > "$RUNNER_TEMP/keystore/prerelease.keystore"
             echo "✅ Keystore cargado desde DEBUG_KEYSTORE_BASE64"
@@ -74,7 +74,7 @@ jobs:
             base64 "$RUNNER_TEMP/keystore/prerelease.keystore"
             echo "════════════════════════════════════════════════════════"
           fi
-          echo "MUSIC_DEBUG_KEYSTORE_FILE=$HOME/work/_temp/keystore/prerelease.keystore" >> $GITHUB_ENV
+          echo "MUSIC_DEBUG_KEYSTORE_FILE=$RUNNER_TEMP/keystore/prerelease.keystore" >> $GITHUB_ENV
           echo "MUSIC_DEBUG_SIGNING_STORE_PASSWORD=android" >> $GITHUB_ENV
           echo "MUSIC_DEBUG_SIGNING_KEY_PASSWORD=android" >> $GITHUB_ENV
           echo "MUSIC_DEBUG_SIGNING_KEY_ALIAS=androiddebugkey" >> $GITHUB_ENV
