@@ -94,6 +94,7 @@ jobs:
           cat ~/.zshrc >> ~/bash.bashrc
           sudo chsh -s $(which zsh)
           echo "set-option -g default-shell $(which zsh)" >> ~/.tmate.conf
+          cat ~/bash.bashrc >> ~/.tmate.conf
           export SHELL=$(which zsh)
 
       - name: "🐞 Debug session"
