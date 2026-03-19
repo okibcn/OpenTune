@@ -24,8 +24,10 @@ import com.arturo254.opentune.db.entities.Album
 import com.arturo254.opentune.db.entities.AlbumArtistMap
 import com.arturo254.opentune.db.entities.AlbumEntity
 import com.arturo254.opentune.db.entities.AlbumWithSongs
+import com.arturo254.opentune.db.entities.AlbumWithStats
 import com.arturo254.opentune.db.entities.Artist
 import com.arturo254.opentune.db.entities.ArtistEntity
+import com.arturo254.opentune.db.entities.ArtistWithStats
 import com.arturo254.opentune.db.entities.Event
 import com.arturo254.opentune.db.entities.EventWithSong
 import com.arturo254.opentune.db.entities.FormatEntity
@@ -386,7 +388,7 @@ interface DatabaseDao {
         limit: Int = 6,
         offset: Int = 0,
         toTimeStamp: Long? = LocalDateTime.now().toInstant(ZoneOffset.UTC).toEpochMilli(),
-    ): Flow<List<Artist>>
+    ): Flow<List<ArtistWithStats>>
 
     @Transaction
     @Query(
@@ -421,13 +423,12 @@ interface DatabaseDao {
     LIMIT :limit OFFSET :offset
     """
     )
-    @RewriteQueriesToDropUnusedColumns
     fun mostPlayedAlbums(
         fromTimeStamp: Long,
         limit: Int = 6,
         offset: Int = 0,
         toTimeStamp: Long? = LocalDateTime.now().toInstant(ZoneOffset.UTC).toEpochMilli(),
-    ): Flow<List<Album>>
+    ): Flow<List<AlbumWithStats>>
 
     @Query("SELECT sum(count) from playCount WHERE song = :songId")
     fun getLifetimePlayCount(songId: String?): Flow<Int>
@@ -527,7 +528,6 @@ interface DatabaseDao {
                       artistTotalPlayTime.totalPlayTime DESC
     """,
     )
-    @Suppress("cursor_mismatch")
     fun allArtistsByPlayTime(): Flow<List<Artist>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -562,28 +562,24 @@ interface DatabaseDao {
         ORDER BY rowId DESC
         """
     )
-    @Suppress("cursor_mismatch")
     fun artistsInAA(): Flow<List<Artist>>
 
     @Transaction
     @Query(
         "SELECT *, (SELECT COUNT(1) FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE artistId = artist.id AND song.inLibrary IS NOT NULL) AS songCount FROM artist WHERE songCount > 0  ORDER BY rowId",
     )
-    @Suppress("cursor_mismatch")
     fun artistsByCreateDateAsc(): Flow<List<Artist>>
 
     @Transaction
     @Query(
         "SELECT *, (SELECT COUNT(1) FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE artistId = artist.id AND song.inLibrary IS NOT NULL) AS songCount FROM artist WHERE songCount > 0 ORDER BY name",
     )
-    @Suppress("cursor_mismatch")
     fun artistsByNameAsc(): Flow<List<Artist>>
 
     @Transaction
     @Query(
         "SELECT * FROM artist WHERE songCount > 0 ORDER BY songCount"
     )
-    @Suppress("cursor_mismatch")
     fun artistsBySongCountAsc(): Flow<List<Artist>>
 
     @Transaction
@@ -606,28 +602,24 @@ interface DatabaseDao {
         WHERE songCount > 0
     """,
     )
-    @Suppress("cursor_mismatch")
     fun artistsByPlayTimeAsc(): Flow<List<Artist>>
 
     @Transaction
     @Query(
         "SELECT *, (SELECT COUNT(1) FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE artistId = artist.id AND song.inLibrary IS NOT NULL) AS songCount FROM artist WHERE bookmarkedAt IS NOT NULL ORDER BY bookmarkedAt",
     )
-    @Suppress("cursor_mismatch")
     fun artistsBookmarkedByCreateDateAsc(): Flow<List<Artist>>
 
     @Transaction
     @Query(
         "SELECT *, (SELECT COUNT(1) FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE artistId = artist.id AND song.inLibrary IS NOT NULL) AS songCount FROM artist WHERE bookmarkedAt IS NOT NULL ORDER BY name",
     )
-    @Suppress("cursor_mismatch")
     fun artistsBookmarkedByNameAsc(): Flow<List<Artist>>
 
     @Transaction
     @Query(
         "SELECT *, (SELECT COUNT(1) FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE artistId = artist.id AND song.inLibrary IS NOT NULL) AS songCount FROM artist WHERE bookmarkedAt IS NOT NULL ORDER BY songCount",
     )
-    @Suppress("cursor_mismatch")
     fun artistsBookmarkedBySongCountAsc(): Flow<List<Artist>>
 
     @Transaction
@@ -650,7 +642,6 @@ interface DatabaseDao {
         WHERE bookmarkedAt IS NOT NULL
     """,
     )
-    @Suppress("cursor_mismatch")
     fun artistsBookmarkedByPlayTimeAsc(): Flow<List<Artist>>
 
     @Query("UPDATE artist SET songCount = :count WHERE id = :artistId")
@@ -706,7 +697,6 @@ interface DatabaseDao {
     }
 
     @Query("SELECT *, (SELECT COUNT(1) FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE artistId = artist.id AND song.inLibrary IS NOT NULL) AS songCount FROM artist WHERE id = :id")
-    @Suppress("cursor_mismatch")
     fun artist(id: String): Flow<Artist?>
 
     @Transaction
@@ -722,32 +712,26 @@ interface DatabaseDao {
         ORDER BY rowId DESC
         """
     )
-    @Suppress("cursor_mismatch")
     fun albumsInAA(): Flow<List<Album>>
 
     @Transaction
     @Query("SELECT * FROM album WHERE EXISTS(SELECT * FROM song WHERE song.albumId = album.id AND song.inLibrary IS NOT NULL) ORDER BY rowId")
-    @Suppress("cursor_mismatch")
     fun albumsByCreateDateAsc(): Flow<List<Album>>
 
     @Transaction
     @Query("SELECT * FROM album WHERE EXISTS(SELECT * FROM song WHERE song.albumId = album.id AND song.inLibrary IS NOT NULL) ORDER BY title")
-    @Suppress("cursor_mismatch")
     fun albumsByNameAsc(): Flow<List<Album>>
 
     @Transaction
     @Query("SELECT * FROM album WHERE EXISTS(SELECT * FROM song WHERE song.albumId = album.id AND song.inLibrary IS NOT NULL) ORDER BY year")
-    @Suppress("cursor_mismatch")
     fun albumsByYearAsc(): Flow<List<Album>>
 
     @Transaction
     @Query("SELECT * FROM album WHERE EXISTS(SELECT * FROM song WHERE song.albumId = album.id AND song.inLibrary IS NOT NULL) ORDER BY songCount")
-    @Suppress("cursor_mismatch")
     fun albumsBySongCountAsc(): Flow<List<Album>>
 
     @Transaction
     @Query("SELECT * FROM album WHERE EXISTS(SELECT * FROM song WHERE song.albumId = album.id AND song.inLibrary IS NOT NULL) ORDER BY duration")
-    @Suppress("cursor_mismatch")
     fun albumsByLengthAsc(): Flow<List<Album>>
 
     @Transaction
@@ -762,32 +746,26 @@ interface DatabaseDao {
         ORDER BY SUM(song.totalPlayTime)
     """,
     )
-    @Suppress("cursor_mismatch")
     fun albumsByPlayTimeAsc(): Flow<List<Album>>
 
     @Transaction
     @Query("SELECT * FROM album WHERE bookmarkedAt IS NOT NULL ORDER BY rowId")
-    @Suppress("cursor_mismatch")
     fun albumsLikedByCreateDateAsc(): Flow<List<Album>>
 
     @Transaction
     @Query("SELECT * FROM album WHERE bookmarkedAt IS NOT NULL ORDER BY title")
-    @Suppress("cursor_mismatch")
     fun albumsLikedByNameAsc(): Flow<List<Album>>
 
     @Transaction
     @Query("SELECT * FROM album WHERE bookmarkedAt IS NOT NULL ORDER BY year")
-    @Suppress("cursor_mismatch")
     fun albumsLikedByYearAsc(): Flow<List<Album>>
 
     @Transaction
     @Query("SELECT * FROM album WHERE bookmarkedAt IS NOT NULL ORDER BY songCount")
-    @Suppress("cursor_mismatch")
     fun albumsLikedBySongCountAsc(): Flow<List<Album>>
 
     @Transaction
     @Query("SELECT * FROM album WHERE bookmarkedAt IS NOT NULL ORDER BY duration")
-    @Suppress("cursor_mismatch")
     fun albumsLikedByLengthAsc(): Flow<List<Album>>
 
     @Transaction
@@ -802,7 +780,6 @@ interface DatabaseDao {
         ORDER BY SUM(song.totalPlayTime)
     """
     )
-    @Suppress("cursor_mismatch")
     fun albumsLikedByPlayTimeAsc(): Flow<List<Album>>
 
     fun albums(
@@ -857,12 +834,13 @@ interface DatabaseDao {
 
     @Transaction
     @Query("SELECT * FROM album WHERE id = :id")
-    @Suppress("cursor_mismatch")
     fun album(id: String): Flow<Album?>
+
+    @Query("SELECT * FROM album WHERE id = :id")
+    fun albumEntityById(id: String): AlbumEntity?
 
     @Transaction
     @Query("SELECT * FROM album WHERE id = :albumId")
-    @Suppress("cursor_mismatch")
     fun albumWithSongs(albumId: String): Flow<AlbumWithSongs?>
 
     @Transaction
@@ -955,7 +933,6 @@ interface DatabaseDao {
     @Query(
         "SELECT *, (SELECT COUNT(1) FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE artistId = artist.id AND song.inLibrary IS NOT NULL) AS songCount FROM artist WHERE name LIKE '%' || :query || '%' AND songCount > 0 LIMIT :previewSize",
     )
-    @Suppress("cursor_mismatch")
     fun searchArtists(
         query: String,
         previewSize: Int = Int.MAX_VALUE,
@@ -965,7 +942,6 @@ interface DatabaseDao {
     @Query(
         "SELECT * FROM album WHERE title LIKE '%' || :query || '%' AND EXISTS(SELECT * FROM song WHERE song.albumId = album.id AND song.inLibrary IS NOT NULL) LIMIT :previewSize",
     )
-    @Suppress("cursor_mismatch")
     fun searchAlbums(
         query: String,
         previewSize: Int = Int.MAX_VALUE,
