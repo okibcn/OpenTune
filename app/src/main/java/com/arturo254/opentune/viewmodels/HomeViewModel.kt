@@ -16,6 +16,7 @@ import com.arturo254.innertube.utils.completedLibraryPage
 import com.arturo254.opentune.constants.InnerTubeCookieKey
 import com.arturo254.opentune.db.MusicDatabase
 import com.arturo254.opentune.db.entities.Album
+import com.arturo254.opentune.db.entities.AlbumEntity
 import com.arturo254.opentune.db.entities.Artist as LocalArtist
 import com.arturo254.opentune.db.entities.ArtistEntity
 import com.arturo254.opentune.db.entities.LocalItem
@@ -87,6 +88,18 @@ class HomeViewModel @Inject constructor(
             .first().shuffled().take(10)
         val keepListeningAlbums = database.mostPlayedAlbums(fromTimeStamp, limit = 8, offset = 2)
             .first().filter { it.thumbnailUrl != null }.shuffled().take(5)
+            .map { albumStats ->
+                Album(
+                    album = AlbumEntity(
+                        id = albumStats.id,
+                        title = albumStats.title,
+                        thumbnailUrl = albumStats.thumbnailUrl,
+                        songCount = 0,
+                        duration = 0,
+                    ),
+                    artists = emptyList(),
+                )
+            }
         val keepListeningArtists = database.mostPlayedArtists(fromTimeStamp)
             .first().filter {
                 (it.id.startsWith("UC") || it.id.startsWith("FEmusic_library_privately_owned_artist")) &&

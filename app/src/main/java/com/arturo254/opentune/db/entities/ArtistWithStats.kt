@@ -11,5 +11,6 @@ data class ArtistWithStats(
     val channelId: String?,
     val songCount: Int,
     val lastUpdateTime: LocalDateTime,
+    val bookmarkedAt: LocalDateTime?,
     val timeListened: Long?,
 )
