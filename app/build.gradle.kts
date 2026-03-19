@@ -78,7 +78,7 @@ android {
     }
 
     kotlinOptions {
-        freeCompilerArgs = freeCompilerArgs + "-Xcontext-receivers" + "-Xuse-k2-kapt"
+        freeCompilerArgs = freeCompilerArgs + "-Xcontext-receivers"
         jvmTarget = "21"
     }
 
@@ -100,17 +100,6 @@ android {
 
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
-}
-
-kapt {
-    correctErrorTypes = true
-    arguments {
-        arg("dagger.fastInit", "ENABLED")
-    }
-    javacOptions {
-        option("-source", "21")
-        option("-target", "21")
-    }
 }
 
 dependencies {
