@@ -78,7 +78,7 @@ android {
     }
 
     kotlinOptions {
-        freeCompilerArgs = freeCompilerArgs + "-Xcontext-receivers"
+        freeCompilerArgs = freeCompilerArgs + "-Xcontext-receivers" + "-Xuse-k2-kapt"
         jvmTarget = "21"
     }
 
@@ -110,12 +110,6 @@ kapt {
     javacOptions {
         option("-source", "21")
         option("-target", "21")
-    }
-}
-
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KaptGenerateStubs>().configureEach {
-    compilerOptions {
-        languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0)
     }
 }
 
