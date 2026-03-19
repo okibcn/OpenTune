@@ -383,6 +383,7 @@ interface DatabaseDao {
                      ON artist.id = artistId
     """,
     )
+    @RewriteQueriesToDropUnusedColumns
     fun mostPlayedArtists(
         fromTimeStamp: Long,
         limit: Int = 6,
@@ -423,6 +424,7 @@ interface DatabaseDao {
     LIMIT :limit OFFSET :offset
     """
     )
+    @RewriteQueriesToDropUnusedColumns
     fun mostPlayedAlbums(
         fromTimeStamp: Long,
         limit: Int = 6,
