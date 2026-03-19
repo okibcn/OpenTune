@@ -102,6 +102,23 @@ ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
 
+kapt {
+    correctErrorTypes = true
+    arguments {
+        arg("dagger.fastInit", "ENABLED")
+    }
+    javacOptions {
+        option("-source", "21")
+        option("-target", "21")
+    }
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KaptGenerateStubs>().configureEach {
+    compilerOptions {
+        languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0)
+    }
+}
+
 dependencies {
     implementation(libs.guava)
     implementation(libs.coroutines.guava)
