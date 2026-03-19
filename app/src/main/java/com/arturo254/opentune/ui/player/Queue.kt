@@ -141,6 +141,7 @@ fun Queue(
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val clipboard = LocalClipboard.current
+    val coroutineScope = rememberCoroutineScope()
     val menuState = LocalMenuState.current
 
     val playerConnection = LocalPlayerConnection.current ?: return
@@ -301,8 +302,6 @@ fun Queue(
             remember(queueWindows) {
                 queueWindows.sumOf { it.mediaItem.metadata!!.duration }
             }
-
-        val coroutineScope = rememberCoroutineScope()
 
         val headerItems = 1
         val lazyListState = rememberLazyListState()
