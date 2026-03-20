@@ -76,9 +76,9 @@ android {
         jvmToolchain(21)
     }
 
-    kotlinOptions {
-        freeCompilerArgs = freeCompilerArgs + "-Xcontext-receivers"
-        jvmTarget = "21"
+    compilerOptions {
+        freeCompilerArgs.addAll("-Xcontext-receivers")
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
     }
 
     // Run with -PenableComposeCompilerReports=true to generate compose compiler metrics
