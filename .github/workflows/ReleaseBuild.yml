@@ -1,15 +1,33 @@
-name: Debug Build
+name: Release Build
 
 concurrency:
-  group: "build"
+  group: "release"
   cancel-in-progress: true
 
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Version tag (e.g. v1.2.3)"
+        required: true
+        type: string
+      release_name:
+        description: "Release title (leave empty to use tag)"
+        required: false
+        type: string
+      prerelease:
+        description: "Mark as pre-release"
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write   # needed to create GitHub Releases
+
     steps:
 
       # ── 1. CHECKOUT ────────────────────────────────────────────────────────────
@@ -17,7 +35,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           submodules: recursive
-          fetch-depth: 1
+          fetch-depth: 0         # full history so the tag can be pushed below
 
       # ── 2. PERMISOS ────────────────────────────────────────────────────────────
       - name: Grant execute permission for gradlew
@@ -38,55 +56,108 @@ jobs:
           cache-read-only: false
 
       # ── 5. SIGNING ─────────────────────────────────────────────────────────────
-      #   - Si DEBUG_KEYSTORE_BASE64 existe → lo decodifica y lo usa (firma consistente)
+      #   - Si RELEASE_KEYSTORE_BASE64 existe → lo decodifica y lo usa (firma consistente)
       #   - Si no existe               → genera uno aleatorio con aviso (firma efímera)
-      # En ambos casos termina con los env vars de firma configurados.
-      - name: Setup debug keystore & signing env vars
+      #
+      #   Para crear el secret permanente, genera tu keystore una vez:
+      #     keytool -genkey -v -keystore release.keystore -alias releasekey \
+      #             -keyalg RSA -keysize 2048 -validity 10000
+      #     base64 release.keystore   # ← pega la salida en RELEASE_KEYSTORE_BASE64
+      #
+      #   Secrets necesarios:
+      #     RELEASE_KEYSTORE_BASE64        – keystore codificado en base64
+      #     RELEASE_SIGNING_STORE_PASSWORD – contraseña del keystore
+      #     RELEASE_SIGNING_KEY_PASSWORD   – contraseña de la key
+      #     RELEASE_SIGNING_KEY_ALIAS      – alias de la key (p.ej. releasekey)
+      # ──────────────────────────────────────────────────────────────────────────
+      - name: Setup release keystore & signing env vars
         env:
-          KEYSTORE_SECRET: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
+          KEYSTORE_SECRET:    ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          STORE_PASSWORD:     ${{ secrets.RELEASE_SIGNING_STORE_PASSWORD }}
+          KEY_PASSWORD:       ${{ secrets.RELEASE_SIGNING_KEY_PASSWORD }}
+          KEY_ALIAS:          ${{ secrets.RELEASE_SIGNING_KEY_ALIAS }}
         run: |
           mkdir -p "$RUNNER_TEMP/keystore/"
+
           if [ -n "$KEYSTORE_SECRET" ]; then
-            printf '%s' "$KEYSTORE_SECRET" | base64 -d > "$RUNNER_TEMP/keystore/prerelease.keystore"
-            echo "✅ Keystore cargado desde DEBUG_KEYSTORE_BASE64"
+            printf '%s' "$KEYSTORE_SECRET" | base64 -d > "$RUNNER_TEMP/keystore/release.keystore"
+            echo "✅ Keystore cargado desde RELEASE_KEYSTORE_BASE64"
+
+            # Usar las credenciales del secret; si alguna está vacía, abortar.
+            if [ -z "$STORE_PASSWORD" ] || [ -z "$KEY_PASSWORD" ] || [ -z "$KEY_ALIAS" ]; then
+              echo "❌ Faltan secrets de firma (PASSWORD / ALIAS). Abortando."
+              exit 1
+            fi
+
+            echo "MUSIC_RELEASE_SIGNING_STORE_PASSWORD=$STORE_PASSWORD" >> $GITHUB_ENV
+            echo "MUSIC_RELEASE_SIGNING_KEY_PASSWORD=$KEY_PASSWORD"     >> $GITHUB_ENV
+            echo "MUSIC_RELEASE_SIGNING_KEY_ALIAS=$KEY_ALIAS"           >> $GITHUB_ENV
+
           else
+            # ── Keystore efímero (solo para pruebas del workflow) ──────────────
             keytool -genkey -v \
-              -keystore "$RUNNER_TEMP/keystore/prerelease.keystore" \
+              -keystore "$RUNNER_TEMP/keystore/release.keystore" \
               -storepass android \
               -keypass android \
-              -alias androiddebugkey \
+              -alias releasekey \
               -keyalg RSA -keysize 2048 -validity 10000 \
-              -dname "C=US, O=Android, CN=Android Debug"
+              -dname "C=US, O=Android, CN=Android Release"
+
             echo ""
             echo "════════════════════════════════════════════════════════"
-            echo "⚠️  DEBUG_KEYSTORE_BASE64 no está configurado."
-            echo "    Este APK usa una firma aleatoria — no podrás instalar"
-            echo "    esta build sobre una anterior sin desinstalarla antes."
+            echo "⚠️  RELEASE_KEYSTORE_BASE64 no está configurado."
+            echo "    Este APK usa una firma aleatoria — NO es apto para"
+            echo "    distribuir ni instalar sobre builds anteriores."
             echo ""
-            echo "    Para fijar esta firma de forma permanente, copia el"
-            echo "    bloque de abajo y añádelo en:"
-            echo "    Settings → Secrets and variables → Actions → [New Repository Secret]"
-            echo "    Nombre del secret: DEBUG_KEYSTORE_BASE64"
+            echo "    Para fijar la firma de release de forma permanente:"
+            echo "    Settings → Secrets and variables → Actions → New Secret"
+            echo "    RELEASE_KEYSTORE_BASE64        → base64 del keystore"
+            echo "    RELEASE_SIGNING_STORE_PASSWORD → contraseña del keystore"
+            echo "    RELEASE_SIGNING_KEY_PASSWORD   → contraseña de la key"
+            echo "    RELEASE_SIGNING_KEY_ALIAS      → alias de la key"
+            echo ""
+            echo "    Keystore generado (base64) para copiar:"
             echo "════════════════════════════════════════════════════════"
-            base64 "$RUNNER_TEMP/keystore/prerelease.keystore"
+            base64 "$RUNNER_TEMP/keystore/release.keystore"
             echo "════════════════════════════════════════════════════════"
+
+            echo "MUSIC_RELEASE_SIGNING_STORE_PASSWORD=android" >> $GITHUB_ENV
+            echo "MUSIC_RELEASE_SIGNING_KEY_PASSWORD=android"   >> $GITHUB_ENV
+            echo "MUSIC_RELEASE_SIGNING_KEY_ALIAS=releasekey"   >> $GITHUB_ENV
           fi
-          echo "MUSIC_DEBUG_KEYSTORE_FILE=$RUNNER_TEMP/keystore/prerelease.keystore" >> $GITHUB_ENV
-          echo "MUSIC_DEBUG_SIGNING_STORE_PASSWORD=android" >> $GITHUB_ENV
-          echo "MUSIC_DEBUG_SIGNING_KEY_PASSWORD=android" >> $GITHUB_ENV
-          echo "MUSIC_DEBUG_SIGNING_KEY_ALIAS=androiddebugkey" >> $GITHUB_ENV
 
-      # ── 6. BUILD ───────────────────────────────────────────────────────────────
-      # --build-cache       → reutiliza outputs de tareas cacheadas
-      # --configuration-cache → cachea la fase de configuración de Gradle
-      # --parallel          → ejecuta tareas independientes en paralelo
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug --build-cache --configuration-cache --parallel
+          echo "MUSIC_RELEASE_KEYSTORE_FILE=$RUNNER_TEMP/keystore/release.keystore" >> $GITHUB_ENV
 
-      # ── 7. ARTIFACT ────────────────────────────────────────────────────────────
-      - name: Upload Debug APK
-        uses: actions/upload-artifact@v6
+      # ── 6. TAG ─────────────────────────────────────────────────────────────────
+      # Crea y empuja el tag indicado por el usuario si no existe ya.
+      - name: Create and push tag
+        run: |
+          TAG="${{ github.event.inputs.tag }}"
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG ya existe — se reutiliza."
+          else
+            git tag -a "$TAG" -m "Release $TAG"
+            git push origin "$TAG"
+            echo "Tag $TAG creado y empujado."
+          fi
+
+      # ── 7. BUILD ───────────────────────────────────────────────────────────────
+      # assembleRelease → R8/ProGuard habilitado, sin debug symbols, firmado.
+      # Se eliminan --configuration-cache porque puede entrar en conflicto con
+      # ciertos plugins de signing en primera ejecución.
+      - name: Build Release APK
+        run: ./gradlew assembleRelease --build-cache --parallel
+
+      # ── 8. GITHUB RELEASE ──────────────────────────────────────────────────────
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: debug-apk-${{ github.ref_name }}-run${{ github.run_number }}
-          path: "app/build/outputs/apk/debug/*.apk"
-          retention-days: 7
+          tag_name:   ${{ github.event.inputs.tag }}
+          name:       ${{ github.event.inputs.release_name || github.event.inputs.tag }}
+          prerelease: ${{ github.event.inputs.prerelease }}
+          generate_release_notes: true      # genera changelog automático desde commits
+          files: app/build/outputs/apk/release/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
