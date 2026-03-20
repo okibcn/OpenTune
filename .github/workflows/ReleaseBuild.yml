@@ -83,15 +83,24 @@ jobs:
             printf '%s' "$KEYSTORE_SECRET" | base64 -d > "$RUNNER_TEMP/keystore/release.keystore"
             echo "✅ Keystore cargado desde RELEASE_KEYSTORE_BASE64"
 
-            # Usar las credenciales del secret; si alguna está vacía, abortar.
+            # Si faltan credenciales individuales, usar las por defecto con aviso.
+            RESOLVED_STORE_PASSWORD="${STORE_PASSWORD:-android}"
+            RESOLVED_KEY_PASSWORD="${KEY_PASSWORD:-android}"
+            RESOLVED_KEY_ALIAS="${KEY_ALIAS:-androidreleasekey}"
+
             if [ -z "$STORE_PASSWORD" ] || [ -z "$KEY_PASSWORD" ] || [ -z "$KEY_ALIAS" ]; then
-              echo "❌ Faltan secrets de firma (PASSWORD / ALIAS). Abortando."
-              exit 1
+              echo ""
+              echo "════════════════════════════════════════════════════════"
+              echo "⚠️  Uno o más secrets de credenciales no están configurados:"
+              [ -z "$STORE_PASSWORD" ] && echo "    · RELEASE_SIGNING_STORE_PASSWORD → usando 'android' (por defecto)"
+              [ -z "$KEY_PASSWORD"   ] && echo "    · RELEASE_SIGNING_KEY_PASSWORD   → usando 'android' (por defecto)"
+              [ -z "$KEY_ALIAS"      ] && echo "    · RELEASE_SIGNING_KEY_ALIAS      → usando 'androidreleasekey' (por defecto)"
+              echo "════════════════════════════════════════════════════════"
             fi
 
-            echo "MUSIC_RELEASE_SIGNING_STORE_PASSWORD=$STORE_PASSWORD" >> $GITHUB_ENV
-            echo "MUSIC_RELEASE_SIGNING_KEY_PASSWORD=$KEY_PASSWORD"     >> $GITHUB_ENV
-            echo "MUSIC_RELEASE_SIGNING_KEY_ALIAS=$KEY_ALIAS"           >> $GITHUB_ENV
+            echo "MUSIC_RELEASE_SIGNING_STORE_PASSWORD=$RESOLVED_STORE_PASSWORD" >> $GITHUB_ENV
+            echo "MUSIC_RELEASE_SIGNING_KEY_PASSWORD=$RESOLVED_KEY_PASSWORD"     >> $GITHUB_ENV
+            echo "MUSIC_RELEASE_SIGNING_KEY_ALIAS=$RESOLVED_KEY_ALIAS"           >> $GITHUB_ENV
 
           else
             # ── Keystore efímero (solo para pruebas del workflow) ──────────────
@@ -123,7 +132,7 @@ jobs:
 
             echo "MUSIC_RELEASE_SIGNING_STORE_PASSWORD=android" >> $GITHUB_ENV
             echo "MUSIC_RELEASE_SIGNING_KEY_PASSWORD=android"   >> $GITHUB_ENV
-            echo "MUSIC_RELEASE_SIGNING_KEY_ALIAS=releasekey"   >> $GITHUB_ENV
+            echo "MUSIC_RELEASE_SIGNING_KEY_ALIAS=androidreleasekey"   >> $GITHUB_ENV
           fi
 
           echo "MUSIC_RELEASE_KEYSTORE_FILE=$RUNNER_TEMP/keystore/release.keystore" >> $GITHUB_ENV
