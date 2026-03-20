@@ -81,6 +81,18 @@ android {
         jvmTarget = "21"
     }
 
+    // Run with -PenableComposeCompilerReports=true to generate compose compiler metrics
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+        compilerOptions {
+            if (project.findProperty("enableComposeCompilerReports") == "true") {
+                arrayOf("reports", "metrics").forEach {
+                    freeCompilerArgs.add("-P")
+                    freeCompilerArgs.add("plugin:androidx.compose.compiler.plugins.kotlin:${it}Destination=${project.layout.buildDirectory}/compose_metrics")
+                }
+            }
+        }
+    }
+
     testOptions {
         unitTests.isIncludeAndroidResources = true
         unitTests.isReturnDefaultValues = true
