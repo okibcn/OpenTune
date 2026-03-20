@@ -1,0 +1,162 @@
+--- a/build.gradle.kts
++++ b/build.gradle.kts
+@@ -1,36 +1,13 @@
+-@file:Suppress("DEPRECATION")
+-
+ plugins {
+-    alias(libs.plugins.hilt) apply(false)
+-    alias(libs.plugins.kotlin.ksp) apply(false)
++    alias(libs.plugins.android.application) apply false
++    alias(libs.plugins.android.library) apply false
++    alias(libs.plugins.kotlin.android) apply false
++    alias(libs.plugins.kotlin.serialization) apply false
++    alias(libs.plugins.hilt) apply false
++    alias(libs.plugins.kotlin.ksp) apply false
+     alias(libs.plugins.compose.compiler) apply false
+ }
+ 
+-    buildscript {
+-    repositories {
+-        google()
+-        mavenCentral()
+-        maven { setUrl("https://jitpack.io") }
+-    }
+-    dependencies {
+-        classpath(libs.gradle)
+-        classpath(kotlin("gradle-plugin", libs.versions.kotlin.get()))
+-    }
+-}
+-
+ tasks.register<Delete>("Clean") {
+     delete(rootProject.layout.buildDirectory)
+ }
+-
+-subprojects {
+-    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+-        compilerOptions {
+-            if (project.findProperty("enableComposeCompilerReports") == "true") {
+-                arrayOf("reports", "metrics").forEach {
+-                    freeCompilerArgs.add("-P")
+-                    freeCompilerArgs.add("plugin:androidx.compose.compiler.plugins.kotlin:${it}Destination=${project.layout.buildDirectory}/compose_metrics")
+-                }
+-            }
+-        }
+-    }
+-}
+--- a/app/build.gradle.kts
++++ b/app/build.gradle.kts
+@@ -1,10 +1,9 @@
+ @file:Suppress("UnstableApiUsage")
+ 
+ plugins {
+-    id("com.android.application")
+-    kotlin("android")
+-    kotlin("plugin.serialization") version "2.1.0"
+-    kotlin("kapt")
++    alias(libs.plugins.android.application)
++    alias(libs.plugins.kotlin.android)
++    alias(libs.plugins.kotlin.serialization)
+     alias(libs.plugins.hilt)
+     alias(libs.plugins.kotlin.ksp)
+     alias(libs.plugins.compose.compiler)
+@@ -82,6 +81,18 @@
+         jvmTarget = "21"
+     }
+ 
++    // Run with -PenableComposeCompilerReports=true to generate compose compiler metrics
++    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
++        compilerOptions {
++            if (project.findProperty("enableComposeCompilerReports") == "true") {
++                arrayOf("reports", "metrics").forEach {
++                    freeCompilerArgs.add("-P")
++                    freeCompilerArgs.add("plugin:androidx.compose.compiler.plugins.kotlin:${it}Destination=${project.layout.buildDirectory}/compose_metrics")
++                }
++            }
++        }
++    }
++
+     testOptions {
+         unitTests.isIncludeAndroidResources = true
+         unitTests.isReturnDefaultValues = true
+@@ -155,7 +166,7 @@
+ 
+     implementation(libs.hilt)
+     implementation("org.jsoup:jsoup:1.18.1")
+-    kapt(libs.hilt.compiler)
++    ksp(libs.hilt.compiler)
+ 
+     implementation(projects.innertube)
+     implementation(projects.kugou)
+--- a/gradle/libs.versions.toml
++++ b/gradle/libs.versions.toml
+@@ -115,4 +115,7 @@
+ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+ compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+ hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+-kotlin-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+\ No newline at end of file
++kotlin-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
++android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
++android-library = { id = "com.android.library", version.ref = "androidGradlePlugin" }
++kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+\ No newline at end of file
+--- a/gradle.properties
++++ b/gradle.properties
+@@ -34,6 +34,7 @@
+ # ------------------------------------------------------------
+ android.useAndroidX=true
+ android.enableJetifier=true
++android.jetifier.ignorelist=media3-session,core-1.16
+ 
+ # Valores dependinetes del codigo (cambiarlos puede requerir ajustes en el código).
+ android.nonTransitiveRClass=false
+--- a/settings.gradle.kts
++++ b/settings.gradle.kts
+@@ -1,5 +1,20 @@
+ @file:Suppress("UnstableApiUsage")
+ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
++
++pluginManagement {
++    repositories {
++        google {
++            content {
++                includeGroupByRegex("com\\.android.*")
++                includeGroupByRegex("com\\.google.*")
++                includeGroupByRegex("androidx.*")
++            }
++        }
++        mavenCentral()
++        gradlePluginPortal()
++    }
++}
++
+ dependencyResolutionManagement {
+     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+ 
+--- a/innertube/build.gradle.kts
++++ b/innertube/build.gradle.kts
+@@ -1,6 +1,5 @@
+ plugins {
+     kotlin("jvm")
+-    @Suppress("DSL_SCOPE_VIOLATION")
+     alias(libs.plugins.kotlin.serialization)
+ }
+ 
+--- a/kugou/build.gradle.kts
++++ b/kugou/build.gradle.kts
+@@ -1,6 +1,5 @@
+ plugins {
+     kotlin("jvm")
+-    @Suppress("DSL_SCOPE_VIOLATION")
+     alias(libs.plugins.kotlin.serialization)
+ }
+ 
+--- a/lrclib/build.gradle.kts
++++ b/lrclib/build.gradle.kts
+@@ -1,6 +1,5 @@
+ plugins {
+     kotlin("jvm")
+-    @Suppress("DSL_SCOPE_VIOLATION")
+     alias(libs.plugins.kotlin.serialization)
+ }
+ 
