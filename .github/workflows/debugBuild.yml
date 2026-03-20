@@ -85,7 +85,7 @@ jobs:
       # --configuration-cache → cachea la fase de configuración de Gradle
       # --parallel          → ejecuta tareas independientes en paralelo
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --build-cache --configuration-cache --parallel --warning-mode all
+        run: ./gradlew assembleDebug --build-cache --configuration-cache --parallel # --warning-mode all
 
       # ── 7. ARTIFACT ────────────────────────────────────────────────────────────
       - name: Upload Debug APK
