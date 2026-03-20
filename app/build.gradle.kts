@@ -76,14 +76,10 @@ android {
         jvmToolchain(21)
     }
 
-    compilerOptions {
-        freeCompilerArgs.addAll("-Xcontext-receivers")
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
-    }
-
     // Run with -PenableComposeCompilerReports=true to generate compose compiler metrics
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
         compilerOptions {
+            freeCompilerArgs.add("-Xcontext-receivers")
             if (project.findProperty("enableComposeCompilerReports") == "true") {
                 arrayOf("reports", "metrics").forEach {
                     freeCompilerArgs.add("-P")
