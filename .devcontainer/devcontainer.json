@@ -1,7 +1,7 @@
 {
   "name": "Android Dev - OpenTune",
-  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
-  "onCreateCommand": "bash .devcontainer/setup.sh",
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "postCreateCommand": "/bin/bash .devcontainer/setup.sh",
   "customizations": {
     "vscode": {
       "extensions": [
@@ -28,7 +28,5 @@
     "ANDROID_HOME": "/opt/android-sdk",
     "ANDROID_SDK_ROOT": "/opt/android-sdk",
     "PATH": "${PATH}:/opt/java/21/bin:/opt/android-sdk/cmdline-tools/latest/bin:/opt/android-sdk/platform-tools:/opt/android-sdk/build-tools/34.0.0"
-  },
-  "postCreateCommand": "echo '✅ Android dev environment ready! Run: ./gradlew assembleDebug --build-cache --configuration-cache --parallel'",
-  "features": {}
+  }
 }
